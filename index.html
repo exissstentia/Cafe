@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Заявка">
+
+    <title>Заявка</title>
+    <style>
+        :root {
+            --bg: #F5F5F7;
+            --card: #FFFFFF;
+            --text: #1D1D1F;
+            --subtext: #86868B;
+            --blue: #007AFF;
+            --red: #FF3B30;
+            --separator: rgba(0,0,0,0.08);
+            --touch-highlight: rgba(0,0,0,0.05);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --card: #1C1C1E;
+                --text: #F5F5F7;
+                --subtext: #98989D;
+                --separator: rgba(255,255,255,0.12);
+                --touch-highlight: rgba(255,255,255,0.1);
+            }
+        }
+
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px 16px 140px;
+        }
+
+        /* Верхняя панель с заголовком и кнопкой очистки */
+        .header-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px 4px 0;
+        }
+
+        h1 {
+            font-size: 34px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .btn-reset {
+            background: none;
+            border: none;
+            color: var(--red);
+            font-size: 17px;
+            cursor: pointer;
+            padding: 10px;
+            margin-right: -10px; /* Компенсация отступа для визуального выравнивания */
+            transition: opacity 0.2s;
+        }
+        .btn-reset:active { opacity: 0.6; }
+
+        /* Заголовки категорий */
+        .category-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--subtext);
+            margin: 30px 0 10px 16px;
+            font-weight: 600;
+        }
+
+        /* Карточка списка */
+        .ios-card {
+            background: var(--card);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            min-height: 52px;
+            position: relative;
+        }
+
+        .row:not(:last-child)::after {
+            content: '';
+            position: absolute; bottom: 0; right: 0; left: 16px;
+            height: 1px; background: var(--separator);
+        }
+
+        .name {
+            font-size: 17px;
+            line-height: 1.4;
+            flex: 1;
+            padding-right: 15px;
+        }
+        
+        .row.selected .name {
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        /* Управление количеством */
+        .controls {
+            display: flex;
+            align-items: center;
+            background: rgba(118, 118, 128, 0.12);
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .btn {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: var(--text);
+            background: var(--card);
+            border: none; border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            cursor: pointer;
+        }
+        .btn:active { transform: scale(0.95); }
+
+        input.qty {
+            width: 50px; text-align: center; border: none; background: transparent;
+            font-size: 17px; font-weight: 500; color: var(--text); outline: none; border-radius: 0;
+        }
+
+        /* Плавающая кнопка "Скопировать" */
+        .float-btn-container {
+            position: fixed; bottom: 40px; left: 0; right: 0;
+            display: flex; justify-content: center;
+            pointer-events: none; z-index: 100;
+        }
+
+        .main-btn {
+            background: var(--text);
+            color: var(--bg);
+            border: none; padding: 16px 40px; border-radius: 30px;
+            font-size: 17px; font-weight: 600;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+            cursor: pointer; pointer-events: auto;
+            transition: transform 0.1s;
+        }
+        .main-btn:active { transform: scale(0.96); }
+
+    </style>
+</head>
+<body>
+
+<div class="header-row">
+    <h1>Заявка</h1>
+    <button class="btn-reset" onclick="resetAll()">Очистить</button>
+</div>
+
+<div id="app"></div>
+
+<div class="float-btn-container">
+    <button class="main-btn" onclick="copyOrder()" id="copyBtn">Скопировать заявку</button>
+</div>
+
+<script>
+    const categories = [
+        {
+            title: "Десерты",
+            items: [
+                "Ангельский рулет", "Амаретти", "Вафля со сгущёнкой", "Имбирное печенье", 
+                "Картошка", "Муравейник", "Три шоколада", "Сырники", 
+                "Тарталетка карамельная", "Тарталетка цитрусовая", "Медовик", 
+                "Рубленный", "Сникерс", "Чизкейк топленое молоко", 
+                "Чизкейк сникерс", "Эклер со сгущёнкой", "Эклер шоколадный"
+            ]
+        },
+        {
+            title: "Пироги",
+            items: ["Капуста-мясо", "Яблоко-брусника", "Горбуша и брокколи", "Курица и грибы", "Творожный"]
+        },
+        {
+            title: "Выпечка и Кухня",
+            items: [
+                "Лапша", "Круассан классический", "Тесто для пасты", "Основа", 
+                "Слойка: Курица и грибы", "Слойка: Ветчина и сыр", "Слойка: Горбуша", 
+                "Сосиски в тесте", "Свинина карбонад соломка", 
+                "Биточек куриный", "Домашняя котлета", "Бриошь"
+            ]
+        }
+    ];
+
+    function render() {
+        const app = document.getElementById('app');
+        let html = '';
+        
+        categories.forEach((cat, catIdx) => {
+            html += `<div class="category-title">${cat.title}</div><div class="ios-card">`;
+            
+            cat.items.forEach((item, itemIdx) => {
+                const id = `p-${catIdx}-${itemIdx}`;
+                let val = localStorage.getItem(id) || ""; 
+                val = val.replace('.', ',');
+
+                const isSelected = val !== "" && parseFloat(val.replace(',', '.')) > 0;
+
+                html += `
+                <div class="row ${isSelected ? 'selected' : ''}" id="row-${id}">
+                    <div class="name">${item}</div>
+                    <div class="controls">
+                        <button class="btn" onclick="step('${id}', -1)">−</button>
+                        <input type="text" inputmode="decimal" class="qty" id="${id}" value="${val}" 
+                               placeholder="0" oninput="handleInput('${id}', this.value)" onblur="formatInput('${id}')">
+                        <button class="btn" onclick="step('${id}', 1)">+</button>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+        });
+        app.innerHTML = html;
+    }
+
+    window.handleInput = function(id, value) {
+        // Разрешаем только цифры, точку и запятую
+        const validValue = value.replace(/[^0-9.,]/g, '');
+        const el = document.getElementById(id);
+        if (value !== validValue) el.value = validValue;
+        save(id, validValue);
+    };
+
+    window.formatInput = function(id) {
+        let val = document.getElementById(id).value;
+        if (!val) return;
+        val = val.replace('.', ',');
+        document.getElementById(id).value = val;
+    };
+
+    window.step = function(id, delta) {
+        const el = document.getElementById(id);
+        let current = parseFloat(el.value.replace(',', '.')) || 0;
+        let next = Math.round((current + delta) * 10) / 10;
+        
+        if (next <= 0) {
+            el.value = "";
+            save(id, "");
+        } else {
+            el.value = next.toString().replace('.', ',');
+            save(id, el.value);
+        }
+    };
+
+    function save(id, value) {
+        const row = document.getElementById(`row-${id}`);
+        const numVal = parseFloat(value.replace(',', '.'));
+        
+        if (numVal > 0) {
+            localStorage.setItem(id, value);
+            row.classList.add('selected');
+        } else {
+            localStorage.removeItem(id);
+            if (!value) row.classList.remove('selected');
+        }
+    }
+
+    window.copyOrder = function() {
+        let text = "";
+        let hasItems = false;
+
+        categories.forEach((cat, cIdx) => {
+            let catItems = "";
+            cat.items.forEach((item, iIdx) => {
+                const id = `p-${cIdx}-${iIdx}`;
+                let val = localStorage.getItem(id);
+                if (val) {
+                    val = val.replace('.', ',');
+                    catItems += `${item}: ${val}\n`;
+                    hasItems = true;
+                }
+            });
+            if (catItems) {
+                text += `\n🔹 ${cat.title}\n${catItems}`;
+            }
+        });
+
+        if (!hasItems) {
+            alert("Список пуст");
+            return;
+        }
+
+        text = text.trim();
+
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('copyBtn');
+            const originalText = btn.innerText;
+            btn.innerText = "Скопировано! ✅";
+            btn.style.background = "#34C759";
+            btn.style.color = "white";
+            
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = "";
+                btn.style.color = "";
+            }, 2000);
+        });
+    };
+
+    // Функция полной очистки
+    window.resetAll = function() {
+        // Проверяем, есть ли что удалять, чтобы не пугать зря
+        if (localStorage.length === 0) return;
+
+        if (confirm("Точно очистить весь список?")) {
+            localStorage.clear();
+            render();
+            // Легкая вибрация для подтверждения (если поддерживается)
+            if (navigator.vibrate) navigator.vibrate(10);
+        }
+    };
+
+    render();
+</script>
+
+</body>
+</html>
