@@ -420,7 +420,7 @@
             <div class="category-title">
                 <div class="category-icon">${ICONS[catIdx] || '🍽'}</div>
                 <span class="category-label">${cat.title}</span>
-                ${sel > 0 ? `<span class="category-count">${sel} выбрано</span>` : ''}
+                <span class="category-count" id="badge-${catIdx}" ${sel === 0 ? 'style="display:none"' : ''}>${sel > 0 ? sel + ' выбрано' : ''}</span>
             </div>
             <div class="ios-card">`;
 
@@ -450,8 +450,21 @@
     window.handleInput = function(id, value) {
         const validValue = value.replace(/[^0-9.,]/g, '');
         const el = document.getElementById(id);
-        if (value !== validValue) el.value = validValue;
-        save(id, validValue);
+        // Restore cursor position if we stripped chars
+        if (value !== validValue) {
+            const pos = el.selectionStart - (value.length - validValue.length);
+            el.value = validValue;
+            el.setSelectionRange(pos, pos);
+        }
+        // Save to localStorage but do NOT re-render — keyboard stays open
+        const numVal = parseFloat(validValue.replace(',', '.'));
+        if (numVal > 0) {
+            localStorage.setItem(id, validValue);
+        } else {
+            localStorage.removeItem(id);
+        }
+        // Only update row highlight and badge, no DOM rebuild
+        updateRow(id, validValue);
     };
 
     window.formatInput = function(id) {
@@ -459,6 +472,10 @@
         if (!val) return;
         val = val.replace('.', ',');
         document.getElementById(id).value = val;
+        // Re-save with comma format
+        const numVal = parseFloat(val.replace(',', '.'));
+        if (numVal > 0) localStorage.setItem(id, val);
+        updateRow(id, val);
     };
 
     window.step = function(id, delta) {
@@ -468,26 +485,56 @@
 
         if (next <= 0) {
             el.value = "";
-            save(id, "");
+            localStorage.removeItem(id);
+            updateRow(id, "");
         } else {
-            el.value = next.toString().replace('.', ',');
-            save(id, el.value);
+            const formatted = next.toString().replace('.', ',');
+            el.value = formatted;
+            localStorage.setItem(id, formatted);
+            updateRow(id, formatted);
         }
     };
 
-    function save(id, value) {
+    // Targeted update: only touches the one row + its category badge
+    function updateRow(id, value) {
         const row = document.getElementById(`row-${id}`);
+        if (!row) return;
         const numVal = parseFloat(value.replace(',', '.'));
+        const isSelected = numVal > 0;
 
-        if (numVal > 0) {
-            localStorage.setItem(id, value);
+        if (isSelected) {
             row.classList.add('selected');
         } else {
-            localStorage.removeItem(id);
-            if (!value) row.classList.remove('selected');
+            row.classList.remove('selected');
         }
-        // Refresh counts
-        render();
+
+        // Update category count badge (find catIdx from id like "p-0-3")
+        const parts = id.split('-');
+        const catIdx = parseInt(parts[1]);
+        updateCategoryBadge(catIdx);
+    }
+
+    function updateCategoryBadge(catIdx) {
+        const sel = countSelected(catIdx);
+        // Badge element has id "badge-N"
+        const badge = document.getElementById(`badge-${catIdx}`);
+        if (!badge) return;
+        if (sel > 0) {
+            badge.textContent = `${sel} выбрано`;
+            badge.style.display = '';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function save(id, value) {
+        // Legacy, only used by resetAll flow via render()
+        const numVal = parseFloat(value.replace(',', '.'));
+        if (numVal > 0) {
+            localStorage.setItem(id, value);
+        } else {
+            localStorage.removeItem(id);
+        }
     }
 
     window.copyOrder = function() {
