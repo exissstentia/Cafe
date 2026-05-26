@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Хоз. заявка">
+    <title>Хоз. заявка</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg:          #EFE9DC;
+            --surface:     #FAF8F3;
+            --surface2:    #E5DFD1;
+            --ink:         #1B2418;
+            --ink-mid:     #556350;
+            --ink-light:   #97A48F;
+            --green:       #3E6E50;
+            --green-soft:  rgba(62,110,80,0.10);
+            --green-mid:   rgba(62,110,80,0.22);
+            --danger:      #8B3A2A;
+            --separator:   rgba(60,80,50,0.10);
+            --shadow:      0 2px 14px rgba(20,35,18,0.08);
+            --shadow-lg:   0 8px 40px rgba(20,35,18,0.18);
+            --radius:      14px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg:         #0E1410;
+                --surface:    #191F17;
+                --surface2:   #212A1E;
+                --ink:        #E8EDE2;
+                --ink-mid:    #8FA886;
+                --ink-light:  #556350;
+                --green:      #5A9E72;
+                --green-soft: rgba(90,158,114,0.12);
+                --green-mid:  rgba(90,158,114,0.22);
+                --separator:  rgba(180,220,160,0.08);
+                --shadow:     0 2px 14px rgba(0,0,0,0.30);
+                --shadow-lg:  0 8px 40px rgba(0,0,0,0.50);
+            }
+        }
+
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            padding: 0 0 160px;
+        }
+
+        /* Kraft paper grain */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 0; opacity: 0.7;
+        }
+
+        /* ─── Header ─── */
+        .header {
+            padding: 56px 24px 24px;
+            position: relative; z-index: 1;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+
+        .header-eyebrow {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 2.8px;
+            text-transform: uppercase;
+            color: var(--green);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .leaf-icon { font-size: 12px; }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 50px;
+            font-weight: 600;
+            line-height: 1;
+            letter-spacing: -1px;
+            color: var(--ink);
+        }
+
+        h1 em {
+            font-style: italic;
+            font-weight: 400;
+            color: var(--green);
+        }
+
+        .btn-reset {
+            background: none;
+            border: 1.5px solid var(--danger);
+            color: var(--danger);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            padding: 7px 13px;
+            border-radius: 20px;
+            margin-bottom: 4px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .btn-reset:active { background: var(--danger); color: white; }
+
+        /* Decorative eco divider */
+        .header-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .divider-line {
+            flex: 1; height: 1px;
+            background: linear-gradient(to right, var(--green), transparent);
+            opacity: 0.5;
+        }
+        .divider-leaf { font-size: 14px; opacity: 0.6; }
+
+        /* ─── App content ─── */
+        #app {
+            padding: 0 16px;
+            position: relative; z-index: 1;
+        }
+
+        /* ─── Category title ─── */
+        .category-title {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin: 30px 0 10px 4px;
+        }
+
+        .cat-icon {
+            width: 28px; height: 28px;
+            border-radius: 8px;
+            background: var(--green-soft);
+            border: 1px solid var(--green-mid);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px;
+        }
+
+        .cat-label {
+            font-size: 10.5px;
+            font-weight: 600;
+            letter-spacing: 2.2px;
+            text-transform: uppercase;
+            color: var(--ink-mid);
+        }
+
+        .cat-badge {
+            margin-left: auto;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--green);
+            background: var(--green-soft);
+            border: 1px solid var(--green-mid);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* ─── Card ─── */
+        .ios-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--separator);
+            animation: fadeUp 0.4s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        #app > *:nth-child(2)  { animation-delay: 0.04s; }
+        #app > *:nth-child(4)  { animation-delay: 0.08s; }
+        #app > *:nth-child(6)  { animation-delay: 0.12s; }
+        #app > *:nth-child(8)  { animation-delay: 0.16s; }
+        #app > *:nth-child(10) { animation-delay: 0.20s; }
+
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 16px;
+            min-height: 54px;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .row.selected { background: var(--green-soft); }
+
+        .row:not(:last-child)::after {
+            content: '';
+            position: absolute; bottom: 0; right: 0; left: 16px;
+            height: 1px; background: var(--separator);
+        }
+
+        .name {
+            font-size: 15.5px;
+            font-weight: 400;
+            line-height: 1.35;
+            flex: 1;
+            padding-right: 14px;
+            color: var(--ink);
+            transition: color 0.2s, font-weight 0.2s;
+        }
+        .row.selected .name { color: var(--green); font-weight: 500; }
+
+        /* ─── Controls ─── */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: var(--surface2);
+            border-radius: 10px;
+            padding: 3px;
+            border: 1px solid var(--separator);
+        }
+
+        .btn {
+            width: 30px; height: 30px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 300;
+            color: var(--ink-mid);
+            background: transparent;
+            border: none; border-radius: 7px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            line-height: 1;
+        }
+        .btn:active { background: var(--green-mid); color: var(--green); transform: scale(0.92); }
+        .row.selected .btn { color: var(--green); }
+
+        input.qty {
+            width: 44px; text-align: center;
+            border: none; background: transparent;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 16px; font-weight: 500;
+            color: var(--ink); outline: none;
+        }
+        .row.selected input.qty { color: var(--green); }
+        input.qty::placeholder { color: var(--ink-light); }
+
+        /* ─── Footer button ─── */
+        .float-btn-container {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            padding: 16px 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
+            pointer-events: none; z-index: 100;
+            background: linear-gradient(to top, var(--bg) 55%, transparent);
+        }
+
+        .main-btn {
+            width: 100%;
+            background: var(--ink);
+            color: var(--bg);
+            border: none;
+            padding: 17px 32px;
+            border-radius: 14px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 16px; font-weight: 600;
+            letter-spacing: 0.3px;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer; pointer-events: auto;
+            transition: transform 0.15s, background 0.3s, color 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .main-btn:active { transform: scale(0.98); }
+        .main-btn.success { background: #2D6B42; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-row">
+        <div>
+            <div class="header-eyebrow"><span class="leaf-icon">♻️</span> Хозяйственный лист</div>
+            <h1>За<em>явка</em></h1>
+        </div>
+        <button class="btn-reset" onclick="resetAll()">Очистить</button>
+    </div>
+    <div class="header-divider">
+        <div class="divider-line"></div>
+        <span class="divider-leaf">🌿</span>
+    </div>
+</div>
+
+<div id="app"></div>
+
+<div class="float-btn-container">
+    <button class="main-btn" onclick="copyOrder()" id="copyBtn">
+        <span>🌱</span>
+        Скопировать заявку
+    </button>
+</div>
+
+<script>
+    const ICONS = ["🧴", "🍽️", "📦", "🔪", "🧹"];
+
+    const categories = [
+        {
+            title: "Чистящие средства",
+            items: [
+                "Стеклоочиститель",
+                "Шуманит",
+                "Ника5 для яиц",
+                "Мыло хозяйственное",
+                "Жидкое мыло 5л",
+                "Прогресс 5л",
+                "Белизна",
+                "Для мытья посуды 5л",
+                "Пемолюкс"
+            ]
+        },
+        {
+            title: "Одноразовая посуда",
+            items: [
+                "Вилки чёрные",
+                "Ножи чёрные",
+                "Ложки чёрные",
+                "Ложки маленькие чёрные",
+                "Стаканы белые 0,4 без крышек",
+                "Стаканы белые 0,3 без крышек",
+                "Крышка ПС черная",
+                "Тарелки неламинированные картон",
+                "Стаканы пульсар прозрачные 0,3",
+                "Стаканы пульсар прозрачные 0,4",
+                "Крышки купол без отверстия",
+                "Крышки купол с отверстием",
+                "Ободок для стакана",
+                "Подставка для кофе (2 ячейки)",
+                "Соусники"
+            ]
+        },
+        {
+            title: "Упаковка",
+            items: [
+                "Пакеты с ручкой крафт",
+                "Пакеты бумажные крафт 220×120×290",
+                "Пакеты спасибо",
+                "Контейнеры прозрачные ракушка маленькая",
+                "Контейнер прозрачный большой",
+                "Коробки под десерты ЕсоКейк 1200 (маленькие)",
+                "Коробки под десерты ЕсоКейк 1900 (большие)",
+                "Коробки под пасту белые",
+                "Упаковка OpSalad500 (для сырников)",
+                "Коробка для пиццы",
+                "Коробка для пирога",
+                "Уголок для сэндвича",
+                "Контейнер под боул",
+                "Бутылки под морс + крышки (стяжками)"
+            ]
+        },
+        {
+            title: "Кухонные расходники",
+            items: [
+                "Пергамент рулон",
+                "Плёнка пищевая 30см",
+                "Плёнка пищевая 40см",
+                "Фольга",
+                "Фасовочные пакетики",
+                "Кондитерский рукав",
+                "Китайские палочки",
+                "Палочки мешалки деревянные",
+                "Трубочки чёрные без гофры",
+                "Трубочки чёрные с гофрой",
+                "Золотые подложки 150×350мм (большие)",
+                "Золотые подложки 120×200мм (маленькие)"
+            ]
+        },
+        {
+            title: "Гигиена и Уборка",
+            items: [
+                "Губка для посуды",
+                "Губка для посуды железная 80гр",
+                "Полотно рулон 80см",
+                "Тряпка микрофибра",
+                "Освежитель воздуха (Airwick)",
+                "Перчатки целофан М",
+						"Перчатки виниловые XL",
+						"Перчатки виниловые L",
+                "Маски одноразовые",
+                "Перчатки толстые резиновые",
+                "Пакеты мусорные 180л (большие)",
+                "Пакеты мусорные 30л (маленькие)",
+                "Салфетки бумажные 100л для гостей",
+                "Полотенца бумажные для гостей",
+                "Бумага круглая в рулоне для гостей",
+                "Туалетная бумага персонал",
+                "Тряпка / швабра (указать размер)"
+            ]
+        }
+    ];
+
+    function countSelected(catIdx) {
+        let n = 0;
+        categories[catIdx].items.forEach((_, iIdx) => {
+            const val = localStorage.getItem(`h-${catIdx}-${iIdx}`);
+            if (val && parseFloat(val.replace(',', '.')) > 0) n++;
+        });
+        return n;
+    }
+
+    function render() {
+        const app = document.getElementById('app');
+        let html = '';
+
+        categories.forEach((cat, catIdx) => {
+            const sel = countSelected(catIdx);
+            html += `
+            <div class="category-title">
+                <div class="cat-icon">${ICONS[catIdx] || '📋'}</div>
+                <span class="cat-label">${cat.title}</span>
+                <span class="cat-badge" id="badge-${catIdx}" style="${sel === 0 ? 'display:none' : ''}">${sel} выбрано</span>
+            </div>
+            <div class="ios-card">`;
+
+            cat.items.forEach((item, itemIdx) => {
+                const id = `h-${catIdx}-${itemIdx}`;
+                let val = localStorage.getItem(id) || "";
+                val = val.replace('.', ',');
+                const isSelected = val !== "" && parseFloat(val.replace(',', '.')) > 0;
+
+                html += `
+                <div class="row ${isSelected ? 'selected' : ''}" id="row-${id}">
+                    <div class="name">${item}</div>
+                    <div class="controls">
+                        <button class="btn" onclick="step('${id}', -1)">−</button>
+                        <input type="text" inputmode="decimal" class="qty" id="${id}" value="${val}"
+                               placeholder="0" oninput="handleInput('${id}', this.value)" onblur="formatInput('${id}')">
+                        <button class="btn" onclick="step('${id}', 1)">+</button>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+        });
+
+        app.innerHTML = html;
+    }
+
+    window.handleInput = function(id, value) {
+        const validValue = value.replace(/[^0-9.,]/g, '');
+        const el = document.getElementById(id);
+        if (value !== validValue) {
+            const pos = el.selectionStart - (value.length - validValue.length);
+            el.value = validValue;
+            el.setSelectionRange(pos, pos);
+        }
+        const numVal = parseFloat(validValue.replace(',', '.'));
+        if (numVal > 0) {
+            localStorage.setItem(id, validValue);
+        } else {
+            localStorage.removeItem(id);
+        }
+        updateRow(id, validValue);
+    };
+
+    window.formatInput = function(id) {
+        let val = document.getElementById(id).value;
+        if (!val) return;
+        val = val.replace('.', ',');
+        document.getElementById(id).value = val;
+        const numVal = parseFloat(val.replace(',', '.'));
+        if (numVal > 0) localStorage.setItem(id, val);
+        updateRow(id, val);
+    };
+
+    window.step = function(id, delta) {
+        const el = document.getElementById(id);
+        let current = parseFloat(el.value.replace(',', '.')) || 0;
+        let next = Math.round((current + delta) * 10) / 10;
+        if (next <= 0) {
+            el.value = "";
+            localStorage.removeItem(id);
+            updateRow(id, "");
+        } else {
+            const formatted = next.toString().replace('.', ',');
+            el.value = formatted;
+            localStorage.setItem(id, formatted);
+            updateRow(id, formatted);
+        }
+    };
+
+    function updateRow(id, value) {
+        const row = document.getElementById(`row-${id}`);
+        if (!row) return;
+        const isSelected = parseFloat(value.replace(',', '.')) > 0;
+        isSelected ? row.classList.add('selected') : row.classList.remove('selected');
+        const parts = id.split('-');
+        updateBadge(parseInt(parts[1]));
+    }
+
+    function updateBadge(catIdx) {
+        const badge = document.getElementById(`badge-${catIdx}`);
+        if (!badge) return;
+        const sel = countSelected(catIdx);
+        if (sel > 0) {
+            badge.textContent = `${sel} выбрано`;
+            badge.style.display = '';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    window.copyOrder = function() {
+        let text = "";
+        let hasItems = false;
+
+        categories.forEach((cat, cIdx) => {
+            let catItems = "";
+            cat.items.forEach((item, iIdx) => {
+                const id = `h-${cIdx}-${iIdx}`;
+                let val = localStorage.getItem(id);
+                if (val) {
+                    val = val.replace('.', ',');
+                    catItems += `${item}: ${val}\n`;
+                    hasItems = true;
+                }
+            });
+            if (catItems) text += `\n♻️ ${cat.title}\n${catItems}`;
+        });
+
+        if (!hasItems) { alert("Список пуст"); return; }
+        text = text.trim();
+
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('copyBtn');
+            btn.innerHTML = `<span>✓</span> Скопировано!`;
+            btn.classList.add('success');
+            setTimeout(() => {
+                btn.innerHTML = `<span>🌱</span> Скопировать заявку`;
+                btn.classList.remove('success');
+            }, 2200);
+        });
+    };
+
+    window.resetAll = function() {
+        if (localStorage.length === 0) return;
+        if (confirm("Точно очистить весь список?")) {
+            localStorage.clear();
+            render();
+            if (navigator.vibrate) navigator.vibrate(10);
+        }
+    };
+
+    render();
+</script>
+</body>
+</html>
